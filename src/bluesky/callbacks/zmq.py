@@ -141,7 +141,7 @@ class Proxy:
     tcp sockets are also supported:
 
      - ``'tcp://localhost:6557'``
-     - ``6657``  (implicitly binds to ``'tcp://localhost:6657'``
+     - ``6657``  (implicitly binds to ``'tcp://localhost:6557'``
      - ``('tcp', 'localhost', 6657)``
      - ``('localhost', 6657)``
 

@@ -238,20 +238,20 @@ class Proxy:
             # Socket facing clients
             frontend = context.socket(zmq.SUB)
             if in_address is None:
-                in_port = frontend.bind_to_random_port("tcp://*")
+                in_bind_result = frontend.bind_to_random_port("tcp://*")
             else:
                 in_address = _normalize_address(in_address)
-                in_port = frontend.bind(in_address)
+                in_bind_result = frontend.bind(in_address)
 
             frontend.setsockopt_string(zmq.SUBSCRIBE, "")
 
             # Socket facing services
             backend = context.socket(zmq.PUB)
             if out_address is None:
-                out_port = backend.bind_to_random_port("tcp://*")
+                out_bind_result = backend.bind_to_random_port("tcp://*")
             else:
                 out_address = _normalize_address(out_address)
-                out_port = backend.bind(out_address)
+                out_bind_result = backend.bind(out_address)
 
         except BaseException:
             # Clean up whichever components we have defined so far.
@@ -266,8 +266,12 @@ class Proxy:
             context.destroy()
             raise
         else:
-            self.in_port = in_port.addr if hasattr(in_port, "addr") else _normalize_address(in_port)
-            self.out_port = out_port.addr if hasattr(out_port, "addr") else _normalize_address(out_port)
+            self.in_port = (
+                in_bind_result.addr if hasattr(in_bind_result, "addr") else _normalize_address(in_bind_result)
+            )
+            self.out_port = (
+                out_bind_result.addr if hasattr(out_bind_result, "addr") else _normalize_address(out_bind_result)
+            )
             self._frontend = frontend
             self._backend = backend
             self._context = context

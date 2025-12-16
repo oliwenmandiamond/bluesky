@@ -193,7 +193,42 @@ class Proxy:
     >>> proxy.start()  # runs until interrupted
     """
 
-    def __init__(self, in_address=None, out_address=None, *, zmq=None):
+    def __init__(
+        self,
+        in_address=None,
+        out_address=None,
+        *,
+        zmq=None,
+        in_port=None,
+        out_port=None,
+    ):
+        # Handle backward compatibility for in_port -> in_address
+        if in_port is not None and in_address is not None:
+            raise ValueError("Cannot specify both 'in_port' and 'in_address'. Use 'in_address' only.")
+        if in_port is not None:
+            warnings.warn(
+                "The 'in_port' parameter is deprecated and will be removed in a future release. "
+                "Use 'in_address' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            in_address = in_port
+
+        # Handle backward compatibility for out_port -> out_address
+        if out_port is not None and out_address is not None:
+            raise ValueError("Cannot specify both 'out_port' and 'out_address'. Use 'out_address' only.")
+        if out_port is not None:
+            warnings.warn(
+                "The 'out_port' parameter is deprecated and will be removed in a future release. "
+                "Use 'out_address' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            out_address = out_port
+
+        # Delete deprecated parameter names
+        del in_port, out_port
+
         if zmq is None:
             import zmq
         self.zmq = zmq

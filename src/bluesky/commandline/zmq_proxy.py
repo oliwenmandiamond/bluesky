@@ -1,6 +1,7 @@
 import argparse
 import logging
 import threading
+import warnings
 
 from bluesky.callbacks.zmq import Proxy, RemoteDispatcher
 
@@ -41,8 +42,15 @@ def start_dispatcher(out_address, logfile=None):
 def main():
     DESC = "Start a 0MQ proxy for publishing bluesky documents over a network."
     parser = argparse.ArgumentParser(description=DESC)
-    parser.add_argument("--in-address", help="port that RunEngines should broadcast to")
-    parser.add_argument("--out-address", help="port that subscribers should subscribe to")
+
+    # New optional arguments (preferred)
+    parser.add_argument("--in-address", dest="in_address_opt", help="port that RunEngines should broadcast to")
+    parser.add_argument("--out-address", dest="out_address_opt", help="port that subscribers should subscribe to")
+
+    # Old positional arguments (deprecated, for backward compatibility)
+    parser.add_argument("in_port", type=int, nargs="?", help=argparse.SUPPRESS)
+    parser.add_argument("out_port", type=int, nargs="?", help=argparse.SUPPRESS)
+
     parser.add_argument(
         "--verbose",
         "-v",
@@ -52,15 +60,49 @@ def main():
     parser.add_argument("--logfile", type=str, help="Redirect logging output to a file on disk.")
     args = parser.parse_args()
 
+    # Handle backward compatibility
+    in_address = None
+    out_address = None
+
+    # Check if old positional arguments were used
+    if args.in_port is not None or args.out_port is not None:
+        # Validate that both are provided if using positional arguments
+        if args.in_port is None or args.out_port is None:
+            raise ValueError(
+                "Both in_port and out_port positional arguments must be provided together. "
+                "Consider using the new optional arguments instead: "
+                "--in-address and --out-address"
+            )
+
+        if args.in_address_opt is not None or args.out_address_opt is not None:
+            raise ValueError(
+                "Cannot mix positional arguments (in_port, out_port) with optional arguments "
+                "(--in-address, --out-address)."
+            )
+
+        warnings.warn(
+            "Using positional arguments for in_port and out_port is deprecated. "
+            "Use --in-address and --out-address instead.",
+            FutureWarning,
+            stacklevel=1,
+        )
+        in_address = args.in_port
+        out_address = args.out_port
+    else:
+        # Use new optional arguments
+        in_address = args.in_address_opt
+        out_address = args.out_address_opt
+
     print("Connecting...")
     try:
-        in_address = int(args.in_address)
+        in_address = int(in_address)
     except (ValueError, TypeError):
-        in_address = args.in_address
+        pass
     try:
-        out_address = int(args.out_address)
+        out_address = int(out_address)
     except (ValueError, TypeError):
-        out_address = args.out_address
+        pass
+
     proxy = Proxy(in_address, out_address)
     print("Receiving on address %s; publishing to address %s." % (proxy.in_port, proxy.out_port))
     if args.verbose:

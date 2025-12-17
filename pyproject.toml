@@ -47,6 +47,7 @@ dev = [
     "lmfit",
     "matplotlib >=3.5.0",
     "mongoquery",
+    "mongomock",
     "multiprocess",
     "mypy",
     "myst-parser",

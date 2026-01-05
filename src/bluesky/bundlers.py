@@ -250,13 +250,20 @@ class RunBundler:
             list(objs_dks),
         )
 
+    # Check to see if we have done this stream before
+    def _use_cache_for_obj(self, obj) -> bool:
+        if self._bundle_name in self._descriptor_objs:
+            if obj in self._descriptor_objs[self._bundle_name]:
+                return True
+        return False
+
     async def _ensure_cached(self, obj, collect=False):
         coros = []
-        if not collect and obj not in self._describe_cache:
+        if not collect and not self._use_cache_for_obj(obj):
             coros.append(self._cache_describe(obj))
-        elif collect and obj not in self._describe_collect_cache:
+        elif collect and not self._use_cache_for_obj(obj):
             coros.append(self._cache_describe_collect(obj))
-        if obj not in self._config_desc_cache:
+        if not self._use_cache_for_obj(obj):
             coros.append(self._cache_describe_config(obj))
             coros.append(self._cache_read_config(obj))
         await asyncio.gather(*coros)

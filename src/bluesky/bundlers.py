@@ -252,6 +252,7 @@ class RunBundler:
 
     # Check to see if we have done this stream before
     def _use_cache_for_obj(self, obj) -> bool:
+        """Check to see if we have done this stream before"""
         if self._bundle_name in self._descriptor_objs:
             if obj in self._descriptor_objs[self._bundle_name]:
                 return True

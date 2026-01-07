@@ -253,22 +253,18 @@ class RunBundler:
     def _needs_new_config_cache(self, obj) -> bool:
         """Check if the bundle name is the descriptors to check if we have done this before with this stream"""
 
-        print(f"bundle_name: {self._bundle_name}")
-        print(f"_descriptor_objs: {self._descriptor_objs}")
-        print(f"obj: {obj}")
-        print()
         # _bundle_name is stream name for read, is None on save. Don't need new cache on save.
         if self._bundle_name is None:
             return False
-
-        return self._bundle_name not in self._descriptor_objs and not self.bundling
+        return self._bundle_name not in self._descriptor_objs
 
     async def _ensure_cached(self, obj, collect=False):
         coros = []
-        if not collect and obj not in self._describe_cache:  # or self._obj_recorded_in_stream(obj):
+        if not collect and obj not in self._describe_cache:
             coros.append(self._cache_describe(obj))
-        elif collect and obj not in self._describe_collect_cache:  # or self._obj_recorded_in_stream(obj):
+        elif collect and obj not in self._describe_collect_cache:
             coros.append(self._cache_describe_collect(obj))
+
         if obj not in self._config_desc_cache or self._needs_new_config_cache(obj):
             coros.append(self._cache_describe_config(obj))
             coros.append(self._cache_read_config(obj))

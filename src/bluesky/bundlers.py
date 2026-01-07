@@ -250,21 +250,26 @@ class RunBundler:
             list(objs_dks),
         )
 
-    # Check to see if we have done this stream before
-    def _use_cache_for_obj(self, obj) -> bool:
-        """Check to see if we have done this stream before"""
-        if self._bundle_name in self._descriptor_objs:
-            if obj in self._descriptor_objs[self._bundle_name]:
-                return True
-        return False
+    def _needs_new_config_cache(self, obj) -> bool:
+        """Check if the bundle name is the descriptors to check if we have done this before with this stream"""
+
+        print(f"bundle_name: {self._bundle_name}")
+        print(f"_descriptor_objs: {self._descriptor_objs}")
+        print(f"obj: {obj}")
+        print()
+        # _bundle_name is stream name for read, is None on save. Don't need new cache on save.
+        if self._bundle_name is None:
+            return False
+
+        return self._bundle_name not in self._descriptor_objs and not self.bundling
 
     async def _ensure_cached(self, obj, collect=False):
         coros = []
-        if not collect and not self._use_cache_for_obj(obj):
+        if not collect and obj not in self._describe_cache:  # or self._obj_recorded_in_stream(obj):
             coros.append(self._cache_describe(obj))
-        elif collect and not self._use_cache_for_obj(obj):
+        elif collect and obj not in self._describe_collect_cache:  # or self._obj_recorded_in_stream(obj):
             coros.append(self._cache_describe_collect(obj))
-        if not self._use_cache_for_obj(obj):
+        if obj not in self._config_desc_cache or self._needs_new_config_cache(obj):
             coros.append(self._cache_describe_config(obj))
             coros.append(self._cache_read_config(obj))
         await asyncio.gather(*coros)

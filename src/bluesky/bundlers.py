@@ -251,8 +251,7 @@ class RunBundler:
         )
 
     def _needs_new_config_cache(self, obj) -> bool:
-        """Check if the bundle name is the descriptors to check if we have done this before with this stream"""
-
+        """Check if the bundle name is in the descriptors to check if we have done this before with this stream"""
         # _bundle_name is stream name for read, is None on save. Don't need new cache on save.
         if self._bundle_name is None:
             return False

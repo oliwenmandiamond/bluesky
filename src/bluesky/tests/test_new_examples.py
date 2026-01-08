@@ -977,8 +977,8 @@ def test_custom_stream_name(RE, hw):
 
 def test_device_has_new_read_configuration_once_per_stream(RE, hw):
     class MultiConfiguredDevice(Readable, Movable[float], HasName):
-        """Device to test that the configuration is not cached and can tell it has changed between each
-        read_configuration. This should be called between each new stream."""
+        """Device to test that read_configuration cache is updated for a new stream. This is done by
+        "configuring" the device and the read_configuration should show a new value."""
 
         def __init__(self, motor, name):
             self._name = name

@@ -5,6 +5,7 @@ from collections import defaultdict
 from types import SimpleNamespace
 
 import pytest
+from event_model.documents.event_descriptor import DataKey
 
 import bluesky.plans as bp
 from bluesky import Msg, RunEngineInterrupted
@@ -69,7 +70,8 @@ from bluesky.preprocessors import (
     subs_wrapper,
     suspend_wrapper,
 )
-from bluesky.protocols import Descriptor, Locatable, Location, Readable, Reading, Status
+from bluesky.protocols import Descriptor, HasName, Locatable, Location, Movable, Readable, Reading, Status
+from bluesky.tests.test_external_assets_and_paging import DocHolder, describe_pv, read_pv
 from bluesky.utils import IllegalMessageSequence, all_safe_rewind
 
 
@@ -971,3 +973,51 @@ def test_custom_stream_name(RE, hw):
 
     with pytest.raises(IllegalMessageSequence):
         RE(count([hw.det], 3, per_shot=one_shot))
+
+
+def test_device_has_new_read_configuration_once_per_stream(RE, hw):
+    class MultiConfiguredDevice(HasName, Readable, Movable[float]):
+        """Device to test that the configuration is not cached and can tell it has changed between each
+        read_configuration. This should be called between each new stream."""
+
+        def __init__(self, motor, name):
+            self.name = name
+            self.motor = motor
+            self.read_value = 10
+
+        def set(self, config_value: int) -> Status:
+            return self.motor.set(config_value)
+
+        def read(self) -> dict[str, Reading]:
+            return read_pv(self, self.read_value)
+
+        def read_configuration(self) -> dict[str, Reading]:
+            return read_pv(self, self.motor.position)
+
+        def describe(self) -> dict[str, DataKey]:
+            return describe_pv(self)
+
+        def describe_configuration(self) -> dict[str, DataKey]:
+            return describe_pv(self)
+
+    def multi_stream_plan(device: MultiConfiguredDevice, value_configuration: list[int]):
+        """Plan that configures a device by setting a value and then reading the device. This is done X number
+        of times. Each time, it saves it to a new stream so we get new device configuration each time."""
+        yield from open_run()
+        for v in value_configuration:
+            yield from abs_set(device, v, wait=True)
+            yield from trigger_and_read([device], name=f"test{v}")
+        yield from close_run()
+
+    docs = DocHolder()
+    device = MultiConfiguredDevice(hw.motor, "device")
+    pv = f"{device.name}-pv"
+
+    config_values = [0, 1, 2, 3]
+    RE(multi_stream_plan(device, config_values), docs.append)
+
+    docs.assert_emitted(start=1, descriptor=len(config_values), event=len(config_values), stop=1)
+    for v in config_values:
+        assert docs["descriptor"][v]["name"] == f"test{v}"
+        assert docs["descriptor"][v]["configuration"][device.name]["data"] == {pv: v}
+        assert docs["event"][v]["data"][pv] == device.read_value

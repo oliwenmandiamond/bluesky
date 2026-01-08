@@ -70,8 +70,8 @@ from bluesky.preprocessors import (
     subs_wrapper,
     suspend_wrapper,
 )
-from bluesky.protocols import Descriptor, HasName, Locatable, Location, Movable, Readable, Reading, Status
-from bluesky.tests.test_external_assets_and_paging import DocHolder, describe_pv, read_pv
+from bluesky.protocols import Descriptor, Locatable, Location, Movable, Readable, Reading, Status
+from bluesky.tests.test_external_assets_and_paging import DocHolder, Named, describe_pv, read_pv
 from bluesky.utils import IllegalMessageSequence, all_safe_rewind
 
 
@@ -976,18 +976,14 @@ def test_custom_stream_name(RE, hw):
 
 
 def test_device_has_new_read_configuration_once_per_stream(RE, hw):
-    class MultiConfiguredDevice(Readable, Movable[float], HasName):
+    class MultiConfiguredDevice(Named, Readable, Movable[int]):
         """Device to test that read_configuration cache is updated for a new stream. This is done by
         "configuring" the device and the read_configuration should show a new value."""
 
         def __init__(self, motor, name):
-            self._name = name
             self.motor = motor
             self.read_value = 10
-
-        @property
-        def name(self):
-            return self._name
+            super().__init__(name)
 
         def set(self, config_value: int) -> Status:
             return self.motor.set(config_value)

@@ -1027,4 +1027,4 @@ def test_device_has_new_read_configuration_once_per_stream(RE, hw):
         assert docs["descriptor"][v]["name"] == f"test{v}"
         assert docs["descriptor"][v]["configuration"][device.name]["data"] == {pv: v}
         for i in range(1, iterations + 1):
-            assert docs["event"][i * v]["data"][pv] == device.read_value
+            assert docs["event"][i + v]["data"][pv] == device.read_value
